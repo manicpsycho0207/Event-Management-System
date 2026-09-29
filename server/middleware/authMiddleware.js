@@ -12,13 +12,19 @@ const protect = (req, res, next) => {
             });
         }
 
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({
+                message: "Authentication is not configured on the server."
+            });
+        }
+
         // Extract token
         const token = authHeader.split(" ")[1];
 
         // Verify token
         const decoded = jwt.verify(
             token,
-            process.env.JWT_SECRET || "event_management_secret"
+            process.env.JWT_SECRET
         );
 
         // Store user information in request

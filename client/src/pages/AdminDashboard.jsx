@@ -11,6 +11,7 @@ function AdminDashboard({ user, onLogout }) {
 
     const [attendees, setAttendees] = useState([]);
     const [waitlist, setWaitlist] = useState([]);
+    const [activeDetails, setActiveDetails] = useState("attendees");
 
     const [showAttendees, setShowAttendees] = useState(false);
 
@@ -227,7 +228,7 @@ function AdminDashboard({ user, onLogout }) {
     // VIEW ATTENDEES + WAITLIST
     // ==========================================
 
-    const handleViewAttendees = async (event) => {
+    const handleViewAttendees = async (event, section = "attendees") => {
         try {
             setLoadingDetails(true);
             setMessage("");
@@ -249,6 +250,7 @@ function AdminDashboard({ user, onLogout }) {
             ]);
 
             setSelectedEvent(event);
+            setActiveDetails(section);
 
             setAttendees(
                 attendeesResponse.data.registrations ||
@@ -262,9 +264,13 @@ function AdminDashboard({ user, onLogout }) {
 
             setShowAttendees(true);
 
-            window.scrollTo({
-                top: 0,
-                behavior: "smooth"
+            window.requestAnimationFrame(() => {
+                document
+                    .getElementById("event-attendance-details")
+                    ?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start"
+                    });
             });
         } catch (err) {
             console.error(err);
@@ -316,6 +322,8 @@ function AdminDashboard({ user, onLogout }) {
                         : registration
                 )
             );
+
+            await fetchEvents();
         } catch (err) {
             setError(
                 err.response?.data?.message ||
@@ -331,12 +339,6 @@ function AdminDashboard({ user, onLogout }) {
 
     const totalEvents = events.length;
 
-    const totalCapacity = events.reduce(
-        (total, event) =>
-            total + Number(event.maxCapacity || 0),
-        0
-    );
-
     const totalRegistrations = events.reduce(
         (total, event) =>
             total +
@@ -344,14 +346,17 @@ function AdminDashboard({ user, onLogout }) {
         0
     );
 
-    const totalAvailableSeats =
-        events.reduce(
-            (total, event) =>
-                total +
-                Number(event.availableSeats || 0),
-            0
-        );
+    const totalWaitlisted = events.reduce(
+        (total, event) =>
+            total + Number(event.waitlistedCount || 0),
+        0
+    );
 
+    const totalPendingAttendance = events.reduce(
+        (total, event) =>
+            total + Number(event.pendingAttendanceCount || 0),
+        0
+    );
 
     // ==========================================
     // LOADING
@@ -375,12 +380,13 @@ function AdminDashboard({ user, onLogout }) {
                 <div className="dashboard-brand">
                     <div className="dashboard-brand-icon">🎓</div>
                     <div>
-                        <strong>CampusEvents</strong>
+                        <strong>Event Management System</strong>
                         <span>Admin Portal</span>
                     </div>
                 </div>
                 <div className="dashboard-account">
                     <span>{user?.name}</span>
+                    <span className="role-pill role-pill-admin">Admin</span>
                     <button className="secondary-button" onClick={onLogout}>
                         Log out
                     </button>
@@ -397,8 +403,7 @@ function AdminDashboard({ user, onLogout }) {
                     <h1>Admin Dashboard</h1>
 
                     <p>
-                        Manage events, registrations,
-                        waitlists and attendance.
+                        Manage events, registrations, waitlists, and attendance.
                     </p>
                 </div>
 
@@ -452,47 +457,44 @@ function AdminDashboard({ user, onLogout }) {
             <div className="stats-grid">
 
                 <div className="stat-card">
-                    <span className="stat-label">
-                        Total Events
-                    </span>
+                    <span className="stat-icon stat-icon-purple" aria-hidden="true">📅</span>
+                    <div>
+                        <span className="stat-label">Total Events</span>
 
-                    <strong className="stat-value">
-                        {totalEvents}
-                    </strong>
+                        <strong className="stat-value">{totalEvents}</strong>
+                    </div>
                 </div>
 
 
                 <div className="stat-card">
-                    <span className="stat-label">
-                        Registrations
-                    </span>
+                    <span className="stat-icon stat-icon-green" aria-hidden="true">✓</span>
+                    <div>
+                        <span className="stat-label">Confirmed Registrations</span>
 
-                    <strong className="stat-value">
-                        {totalRegistrations}
-                    </strong>
+                        <strong className="stat-value">{totalRegistrations}</strong>
+                    </div>
                 </div>
 
 
                 <div className="stat-card">
-                    <span className="stat-label">
-                        Seats Available
-                    </span>
+                    <span className="stat-icon stat-icon-orange" aria-hidden="true">⌛</span>
+                    <div>
+                        <span className="stat-label">Total Waitlisted</span>
 
-                    <strong className="stat-value">
-                        {totalAvailableSeats}
-                    </strong>
+                        <strong className="stat-value">{totalWaitlisted}</strong>
+                    </div>
                 </div>
 
 
                 <div className="stat-card">
-                    <span className="stat-label">
-                        Total Capacity
-                    </span>
+                    <span className="stat-icon stat-icon-blue" aria-hidden="true">◷</span>
+                    <div>
+                        <span className="stat-label">Attendance Pending</span>
 
-                    <strong className="stat-value">
-                        {totalCapacity}
-                    </strong>
+                        <strong className="stat-value">{totalPendingAttendance}</strong>
+                    </div>
                 </div>
+
 
             </div>
 
@@ -534,11 +536,12 @@ function AdminDashboard({ user, onLogout }) {
                     >
 
                         <div className="form-group">
-                            <label>
+                            <label htmlFor="event-name">
                                 Event Name
                             </label>
 
                             <input
+                                id="event-name"
                                 type="text"
                                 name="name"
                                 value={formData.name}
@@ -554,11 +557,12 @@ function AdminDashboard({ user, onLogout }) {
                         <div className="form-row">
 
                             <div className="form-group">
-                                <label>
+                                <label htmlFor="event-date">
                                     Date
                                 </label>
 
                                 <input
+                                    id="event-date"
                                     type="date"
                                     name="date"
                                     value={formData.date}
@@ -571,11 +575,12 @@ function AdminDashboard({ user, onLogout }) {
 
 
                             <div className="form-group">
-                                <label>
+                                <label htmlFor="event-time">
                                     Time
                                 </label>
 
                                 <input
+                                    id="event-time"
                                     type="time"
                                     name="time"
                                     value={formData.time}
@@ -588,11 +593,12 @@ function AdminDashboard({ user, onLogout }) {
 
 
                             <div className="form-group">
-                                <label>
+                                <label htmlFor="event-capacity">
                                     Maximum Seats
                                 </label>
 
                                 <input
+                                    id="event-capacity"
                                     type="number"
                                     name="maxCapacity"
                                     value={
@@ -638,11 +644,11 @@ function AdminDashboard({ user, onLogout }) {
                             Manage Events
                         </h2>
 
-                        <p>
-                            Manage your events and monitor
-                            registrations.
-                        </p>
+                        <p>Manage event details and monitor confirmed seats.</p>
                     </div>
+                    <button className="refresh-button" onClick={fetchEvents}>
+                        Refresh events
+                    </button>
 
                 </div>
 
@@ -650,6 +656,8 @@ function AdminDashboard({ user, onLogout }) {
                 {events.length === 0 ? (
 
                     <div className="empty-state">
+
+                        <span className="empty-state-icon" aria-hidden="true">📅</span>
 
                         <h3>
                             No events created
@@ -675,15 +683,14 @@ function AdminDashboard({ user, onLogout }) {
 
                                 <div className="event-card-header">
 
-                                    <h3>
-                                        {event.name}
-                                    </h3>
+                                        <h3>{event.name}</h3>
 
-                                    {event.availableSeats === 0 && (
-                                        <span className="event-badge">
-                                            FULL
-                                        </span>
-                                    )}
+                                    <span className={`event-status-badge ${event.availableSeats === 0
+                                        ? "event-status-full"
+                                        : "event-status-available"
+                                        }`}>
+                                        {event.availableSeats === 0 ? "FULL" : "AVAILABLE"}
+                                    </span>
 
                                 </div>
 
@@ -728,17 +735,30 @@ function AdminDashboard({ user, onLogout }) {
                                 </div>
 
 
-                                <div className="event-actions">
+                                <div className="event-actions admin-event-actions">
 
                                     <button
                                         className="primary-button"
                                         onClick={() =>
                                             handleViewAttendees(
-                                                event
+                                                event,
+                                                "attendees"
                                             )
                                         }
                                     >
                                         View Attendees
+                                    </button>
+
+                                    <button
+                                        className="secondary-button"
+                                        onClick={() =>
+                                            handleViewAttendees(
+                                                event,
+                                                "waitlist"
+                                            )
+                                        }
+                                    >
+                                        View Waitlist
                                     </button>
 
 
@@ -783,7 +803,10 @@ function AdminDashboard({ user, onLogout }) {
             {showAttendees &&
                 selectedEvent && (
 
-                    <section className="dashboard-section">
+                    <section
+                        id="event-attendance-details"
+                        className="dashboard-section"
+                    >
 
                         <div className="section-header">
 
@@ -824,10 +847,32 @@ function AdminDashboard({ user, onLogout }) {
 
                             <>
 
+                                <div className="detail-tabs" role="tablist" aria-label="Event details">
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={activeDetails === "attendees"}
+                                        className={activeDetails === "attendees" ? "detail-tab active" : "detail-tab"}
+                                        onClick={() => setActiveDetails("attendees")}
+                                    >
+                                        Confirmed Attendees ({attendees.length})
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={activeDetails === "waitlist"}
+                                        className={activeDetails === "waitlist" ? "detail-tab active" : "detail-tab"}
+                                        onClick={() => setActiveDetails("waitlist")}
+                                    >
+                                        Waitlist ({waitlist.length})
+                                    </button>
+                                </div>
+
                                 {/* =================================
                                     CONFIRMED ATTENDEES
                                 ================================== */}
 
+                                {activeDetails === "attendees" && (
                                 <div className="attendance-section">
 
                                     <h3>
@@ -838,9 +883,9 @@ function AdminDashboard({ user, onLogout }) {
                                     {attendees.length === 0 ? (
 
                                         <div className="empty-state">
-                                            <p>
-                                                No confirmed attendees.
-                                            </p>
+                                            <span className="empty-state-icon" aria-hidden="true">👥</span>
+                                            <h3>No confirmed attendees</h3>
+                                            <p>Confirmed registrations will appear here.</p>
                                         </div>
 
                                     ) : (
@@ -858,7 +903,7 @@ function AdminDashboard({ user, onLogout }) {
                                                         </th>
 
                                                         <th>
-                                                            Student
+                                                            Student Name
                                                         </th>
 
                                                         <th>
@@ -866,17 +911,18 @@ function AdminDashboard({ user, onLogout }) {
                                                         </th>
 
                                                         <th>
-                                                            Registered At
+                                                            Registration Time
                                                         </th>
 
                                                         <th>
                                                             Attendance
                                                         </th>
 
+                                                        <th>Action</th>
+
                                                     </tr>
 
                                                 </thead>
-
 
                                                 <tbody>
 
@@ -919,50 +965,26 @@ function AdminDashboard({ user, onLogout }) {
                                                                 </td>
 
                                                                 <td>
+                                                                    <span className={`attendance-value attendance-${(registration.attendance || "Pending").toLowerCase()}`}>
+                                                                        {registration.attendance || "Pending"}
+                                                                    </span>
+                                                                </td>
 
+                                                                <td>
                                                                     <div className="attendance-actions">
-
-                                                                        <span className="attendance-current">
-                                                                            Current: {registration.attendance || "Pending"}
-                                                                        </span>
-
                                                                         <button
-                                                                            className={
-                                                                                registration.attendance ===
-                                                                                "Attended"
-                                                                                    ? "attendance-button active"
-                                                                                    : "attendance-button"
-                                                                            }
-                                                                            onClick={() =>
-                                                                                handleAttendance(
-                                                                                    registration._id,
-                                                                                    "Attended"
-                                                                                )
-                                                                            }
+                                                                            className={registration.attendance === "Attended" ? "attendance-button active" : "attendance-button"}
+                                                                            onClick={() => handleAttendance(registration._id, "Attended")}
                                                                         >
                                                                             ✓ Attended
                                                                         </button>
-
-
                                                                         <button
-                                                                            className={
-                                                                                registration.attendance ===
-                                                                                "Absent"
-                                                                                    ? "attendance-button active"
-                                                                                    : "attendance-button"
-                                                                            }
-                                                                            onClick={() =>
-                                                                                handleAttendance(
-                                                                                    registration._id,
-                                                                                    "Absent"
-                                                                                )
-                                                                            }
+                                                                            className={registration.attendance === "Absent" ? "attendance-button active" : "attendance-button"}
+                                                                            onClick={() => handleAttendance(registration._id, "Absent")}
                                                                         >
                                                                             ✕ Absent
                                                                         </button>
-
                                                                     </div>
-
                                                                 </td>
 
                                                             </tr>
@@ -979,12 +1001,14 @@ function AdminDashboard({ user, onLogout }) {
                                     )}
 
                                 </div>
+                                )}
 
 
                                 {/* =================================
                                     WAITLIST
                                 ================================== */}
 
+                                {activeDetails === "waitlist" && (
                                 <div className="waitlist-section">
 
                                     <h3>
@@ -995,10 +1019,9 @@ function AdminDashboard({ user, onLogout }) {
                                     {waitlist.length === 0 ? (
 
                                         <div className="empty-state">
-                                            <p>
-                                                No students are currently
-                                                on the waitlist.
-                                            </p>
+                                            <span className="empty-state-icon" aria-hidden="true">⌛</span>
+                                            <h3>No waitlisted students</h3>
+                                            <p>Students who join this event's waitlist will appear here in FIFO order.</p>
                                         </div>
 
                                     ) : (
@@ -1047,17 +1070,13 @@ function AdminDashboard({ user, onLogout }) {
                                                             >
 
                                                                 <td>
-                                                                    <strong>
-                                                                        {entry.position || index + 1}
+                                                                    <strong className="queue-position">
+                                                                        #{entry.position || index + 1}
                                                                     </strong>
                                                                 </td>
 
                                                                 <td>
-                                                                    {
-                                                                        entry
-                                                                            .student
-                                                                            ?.name
-                                                                    }
+                                                                    {entry.student?.name}
                                                                 </td>
 
                                                                 <td>
@@ -1088,6 +1107,7 @@ function AdminDashboard({ user, onLogout }) {
                                     )}
 
                                 </div>
+                                )}
 
                             </>
 

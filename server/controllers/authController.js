@@ -104,13 +104,19 @@ const loginUser = async (req, res) => {
             });
         }
 
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({
+                message: "Authentication is not configured on the server"
+            });
+        }
+
         // Create JWT token
         const token = jwt.sign(
             {
                 id: user._id,
                 role: user.role
             },
-            process.env.JWT_SECRET || "event_management_secret",
+            process.env.JWT_SECRET,
             {
                 expiresIn: "1d"
             }

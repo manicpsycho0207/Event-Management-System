@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+**/node_modules/
 server/node_modules/
 client/node_modules/
 
@@ -7,11 +8,15 @@ client/node_modules/
 **/.env
 **/.env.*
 !**/.env.example
+server/.env
+client/.env
 
 # Build files
 dist/
 client/dist/
 
 # Logs
+logs/
+**/logs/
 *.log
 npm-debug.log*

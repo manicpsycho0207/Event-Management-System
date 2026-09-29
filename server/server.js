@@ -14,6 +14,11 @@ const registrationRoutes = require("./routes/registrationRoutes");
 
 dotenv.config();
 
+if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is required to start the server.");
+    process.exit(1);
+}
+
 const app = express();
 
 // Connect to MongoDB Atlas
@@ -31,13 +36,6 @@ app.use("/api/events", eventRoutes);
 
 // Registration routes
 app.use("/api/registrations", registrationRoutes);
-
-// Test route
-app.get("/", (req, res) => {
-    res.json({
-        message: "Event Management System API is running"
-    });
-});
 
 // Server port
 const PORT = process.env.PORT || 5000;

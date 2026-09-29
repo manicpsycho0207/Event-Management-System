@@ -1,5 +1,6 @@
 const Event = require("../models/Event");
 const Registration = require("../models/Registration");
+const Waitlist = require("../models/Waitlist");
 
 // Create a new event
 const createEvent = async (req, res) => {
@@ -62,12 +63,22 @@ const getEvents = async (req, res) => {
         const eventsWithSeats = await Promise.all(
             events.map(async (event) => {
 
-                // Only confirmed registrations occupy seats
-                const registrationCount =
-                    await Registration.countDocuments({
-                        event: event._id,
-                        status: "confirmed"
-                    });
+                const [registrationCount, waitlistedCount, pendingAttendanceCount] =
+                    await Promise.all([
+                        Registration.countDocuments({
+                            event: event._id,
+                            status: "confirmed"
+                        }),
+                        Waitlist.countDocuments({ event: event._id }),
+                        Registration.countDocuments({
+                            event: event._id,
+                            status: "confirmed",
+                            $or: [
+                                { attendance: "Pending" },
+                                { attendance: { $exists: false } }
+                            ]
+                        })
+                    ]);
 
                 const availableSeats =
                     event.maxCapacity -
@@ -80,6 +91,8 @@ const getEvents = async (req, res) => {
                     time: event.time,
                     maxCapacity: event.maxCapacity,
                     registeredSeats: registrationCount,
+                    waitlistedCount,
+                    pendingAttendanceCount,
                     availableSeats:
                         Math.max(availableSeats, 0),
                     createdBy: event.createdBy
@@ -120,11 +133,22 @@ const getEventById = async (req, res) => {
             });
         }
 
-        const registrationCount =
-            await Registration.countDocuments({
-                event: event._id,
-                status: "confirmed"
-            });
+        const [registrationCount, waitlistedCount, pendingAttendanceCount] =
+            await Promise.all([
+                Registration.countDocuments({
+                    event: event._id,
+                    status: "confirmed"
+                }),
+                Waitlist.countDocuments({ event: event._id }),
+                Registration.countDocuments({
+                    event: event._id,
+                    status: "confirmed",
+                    $or: [
+                        { attendance: "Pending" },
+                        { attendance: { $exists: false } }
+                    ]
+                })
+            ]);
 
         const availableSeats =
             event.maxCapacity -
@@ -138,6 +162,8 @@ const getEventById = async (req, res) => {
                 time: event.time,
                 maxCapacity: event.maxCapacity,
                 registeredSeats: registrationCount,
+                waitlistedCount,
+                pendingAttendanceCount,
                 availableSeats:
                     Math.max(availableSeats, 0),
                 createdBy: event.createdBy
@@ -274,9 +300,6 @@ const deleteEvent = async (req, res) => {
         });
 
         // Delete waitlist entries
-        const Waitlist =
-            require("../models/Waitlist");
-
         await Waitlist.deleteMany({
             event: event._id
         });

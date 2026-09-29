@@ -1,22 +1,27 @@
-# College Event Management System
+# Event Management System
 
-A full-stack event management application for college administrators and students. Administrators create events and manage attendees; students register for available seats or join a first-in, first-out (FIFO) waitlist.
+## Overview
+
+A role-based college event management system. Administrators create and manage events, while students browse upcoming events, register for available seats, and join a First-Come, First-Served (FIFO) waitlist when an event is full.
 
 ## Features
 
 ### Admin
-- Create, edit, and delete events.
-- View capacity, confirmed registration count, and available seats.
-- View confirmed attendees and waitlisted students in join order.
-- Mark confirmed attendees as Attended or Absent. New registrations and waitlist promotions start as Pending.
+- Log in and manage events: create, edit, and delete.
+- View confirmed attendees, event capacity, and available seats.
+- View waitlisted students in FIFO order.
+- Mark confirmed attendees as Attended or Absent.
 
 ### Student
-- Browse events and see capacity, confirmed seats, and remaining seats.
-- Register while a seat is available; join the waitlist only when the event is full.
-- View active registrations and waitlist entries, including current queue position.
-- Cancel a confirmed registration. The first waitlisted student is promoted automatically.
+- Register and log in.
+- Browse upcoming events and see date, time, capacity, confirmed registrations, and available seats.
+- Register while a seat is available or join the waitlist when full.
+- View registration status, attendance status, and actual FIFO waitlist position.
+- Cancel a confirmed registration and see current registrations and waitlist entries.
 
-### Registration and waitlist rules
+New registrations and promoted students have Pending attendance by default.
+
+### Registration rules
 - Only `confirmed` registrations count toward event capacity; cancelled registrations and waitlist entries do not.
 - A student cannot register twice, join a waitlist while registered, join the same waitlist twice, or join a waitlist while seats remain.
 - Each queue entry stores `joinedAt`; queue operations sort by `joinedAt` and use the entry ID as a deterministic tie-breaker.
@@ -26,9 +31,30 @@ A full-stack event management application for college administrators and student
 
 ## Technology stack
 
-- **Frontend:** React, Vite, JavaScript, Axios, CSS
+- **Frontend:** React, Vite, JavaScript, Axios, HTML, CSS
 - **Backend:** Node.js, Express.js, JWT, bcryptjs
 - **Database:** MongoDB Atlas with Mongoose
+
+## Project structure
+
+```text
+client/
+   src/
+      pages/                 Student and admin dashboards
+      App.jsx                Login, registration, and role-based dashboard routing
+      App.css                Application and dashboard styles
+      index.css              Global styles
+   package.json
+server/
+   config/                  MongoDB connection
+   controllers/             Authentication, event, and registration logic
+   middleware/              JWT and role protection
+   models/                  User, Event, Registration, and Waitlist schemas
+   routes/                  Authentication, event, and registration APIs
+   server.js                Express application entry point
+   package.json
+README.md
+```
 
 ## API endpoints
 
@@ -38,8 +64,8 @@ All endpoints are under `/api`. Protected requests use `Authorization: Bearer <t
 | --- | --- | --- | --- |
 | POST | `/auth/register` | Public | Create an account with a student or admin role |
 | POST | `/auth/login` | Public | Log in and receive a JWT |
-| GET | `/events` | Authenticated | List events with `maxCapacity`, `registeredSeats`, and `availableSeats` |
-| GET | `/events/:id` | Authenticated | Get one event with seat counts |
+| GET | `/events` | Authenticated | List events with capacity, confirmed seats, available seats, waitlist count, and Pending attendance count |
+| GET | `/events/:id` | Authenticated | Get one event with the same seat and summary counts |
 | POST | `/events` | Admin | Create an event |
 | PUT | `/events/:id` | Admin | Edit an event |
 | DELETE | `/events/:id` | Admin | Delete an event and its registrations/waitlist |
@@ -52,7 +78,19 @@ All endpoints are under `/api`. Protected requests use `Authorization: Bearer <t
 | GET | `/registrations/event/:eventId/waitlist` | Admin | List waitlisted students in FIFO order |
 | PUT | `/registrations/:registrationId/attendance` | Admin | Set attendance to `Attended` or `Absent` |
 
-## Local setup
+## Environment variables
+
+Set these values in `server/.env`; do not commit that file or put real credentials in this README.
+
+| Variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `JWT_SECRET` | Long, randomly generated JWT signing secret |
+| `PORT` | API port (defaults to `5000`) |
+
+The frontend optionally accepts `VITE_API_URL` in `client/.env.local`, defaulting to `http://localhost:5000/api`.
+
+## Installation
 
 ### Requirements
 - Node.js and npm
@@ -83,9 +121,17 @@ All endpoints are under `/api`. Protected requests use `Authorization: Bearer <t
 
 JWTs are stored under the `eventManagementToken` local-storage key. The `.gitignore` excludes `.env` and `.env.*` files (except `.env.example` templates); never commit database credentials or JWT secrets.
 
-## FIFO promotion flow
+## Waitlist Logic
 
-When a student cancels, the API marks their registration cancelled and selects the queue entry with the earliest `joinedAt` (stable ID tie-breaker). In a database transaction, that student is promoted to a confirmed registration with Pending attendance and removed from the waitlist. The next student's displayed position then moves up automatically. If the queue is empty, the seat remains available.
+1. Students receive confirmed registration while seats are available.
+2. When capacity is reached, students can join the waitlist instead of registering.
+3. Entries are ordered by `joinedAt` and FIFO position is calculated against all waiting students for the event.
+4. When a confirmed attendee cancels, the earliest waitlisted student is promoted automatically in a MongoDB transaction and removed from the queue.
+5. Remaining students move up and receive updated positions. If the queue is empty, the cancelled seat becomes available.
+
+## Attendance
+
+Every new or promoted confirmed registration starts with `Pending` attendance. An administrator can update confirmed attendees to `Attended` or `Absent`; the current value appears on the student registration list and the admin attendee table.
 
 ## Test credentials
 
@@ -101,3 +147,7 @@ Use only for local/demo assessment data. Change or remove demo credentials befor
 - Frontend production build: run `npm run build` in `client/`.
 - Frontend lint: run `npm run lint` in `client/`.
 - Verify the core workflow with at least two student accounts and one admin: register to capacity, add two waitlist entries, cancel a confirmed registration, then confirm the oldest student was promoted and the remaining queue position shifted.
+
+## Assessment scope
+
+This project focuses on event registration, FIFO waitlists, role-based event management, and attendance. Payment processing, ticketing, certificate generation, and complex multi-day scheduling are outside the assessment scope.

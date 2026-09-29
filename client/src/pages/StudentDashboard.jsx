@@ -102,11 +102,6 @@ function StudentDashboard({ user, onLogout }) {
                 }
             );
 
-            console.log(
-                "Registration response:",
-                response.data
-            );
-
             setMessage(
                 response.data.message ||
                 "Registration successful."
@@ -239,6 +234,14 @@ function StudentDashboard({ user, onLogout }) {
         return getWaitlistEntry(eventId)?.position ?? null;
     };
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const upcomingEvents = events.filter((event) => {
+        const eventDate = new Date(`${event.date}T00:00:00`);
+        return Number.isNaN(eventDate.getTime()) || eventDate >= today;
+    });
+
     // ==========================================
     // LOADING STATE
     // ==========================================
@@ -264,12 +267,13 @@ function StudentDashboard({ user, onLogout }) {
                 <div className="dashboard-brand">
                     <div className="dashboard-brand-icon">🎓</div>
                     <div>
-                        <strong>CampusEvents</strong>
-                        <span>Student Portal</span>
+                        <strong>Event Management System</strong>
+                        <span>Student Dashboard</span>
                     </div>
                 </div>
                 <div className="dashboard-account">
                     <span>{user?.name}</span>
+                    <span className="role-pill role-pill-student">Student</span>
                     <button className="secondary-button" onClick={onLogout}>
                         Log out
                     </button>
@@ -283,8 +287,7 @@ function StudentDashboard({ user, onLogout }) {
                     <h1>Student Dashboard</h1>
 
                     <p>
-                        Browse events, register for seats,
-                        or join a waitlist when an event is full.
+                        Discover events, reserve your seat, and manage your registrations.
                     </p>
                 </div>
             </div>
@@ -303,6 +306,30 @@ function StudentDashboard({ user, onLogout }) {
                 </div>
             )}
 
+            <section className="stats-grid student-summary-grid" aria-label="Student summary">
+                <div className="stat-card">
+                    <span className="stat-icon stat-icon-purple" aria-hidden="true">📅</span>
+                    <div>
+                        <span className="stat-label">Upcoming Events</span>
+                        <strong className="stat-value">{upcomingEvents.length}</strong>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-icon stat-icon-green" aria-hidden="true">✓</span>
+                    <div>
+                        <span className="stat-label">My Registrations</span>
+                        <strong className="stat-value">{registrations.length}</strong>
+                    </div>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-icon stat-icon-orange" aria-hidden="true">⌛</span>
+                    <div>
+                        <span className="stat-label">My Waitlist</span>
+                        <strong className="stat-value">{waitlist.length}</strong>
+                    </div>
+                </div>
+            </section>
+
             {/* Events */}
 
             <section className="dashboard-section">
@@ -317,20 +344,20 @@ function StudentDashboard({ user, onLogout }) {
                     </div>
                 </div>
 
-                {events.length === 0 ? (
+                {upcomingEvents.length === 0 ? (
                     <div className="empty-state">
-                        <h3>No events available</h3>
+                        <span className="empty-state-icon" aria-hidden="true">📅</span>
+                        <h3>No upcoming events</h3>
 
                         <p>
-                            There are currently no events
-                            available for registration.
+                            There's nothing scheduled yet. Check back soon for new events.
                         </p>
                     </div>
                 ) : (
 
                     <div className="event-grid">
 
-                        {events.map((event) => {
+                        {upcomingEvents.map((event) => {
 
                             const registered =
                                 isRegistered(
@@ -362,11 +389,22 @@ function StudentDashboard({ user, onLogout }) {
                                             {event.name}
                                         </h3>
 
-                                        {isFull && (
-                                            <span className="event-badge">
-                                                FULL
-                                            </span>
-                                        )}
+                                        <span className={`event-status-badge ${registered
+                                            ? "event-status-registered"
+                                            : waitlistEntry
+                                                ? "event-status-waitlisted"
+                                                : isFull
+                                                    ? "event-status-full"
+                                                    : "event-status-available"
+                                            }`}>
+                                            {registered
+                                                ? "✓ REGISTERED"
+                                                : waitlistEntry
+                                                    ? "⏳ WAITLISTED"
+                                                    : isFull
+                                                        ? "FULL"
+                                                        : "AVAILABLE"}
+                                        </span>
 
                                     </div>
 
@@ -445,7 +483,7 @@ function StudentDashboard({ user, onLogout }) {
                                                     <p>
                                                         Position:{" "}
                                                         <strong>
-                                                            {waitlistPosition}
+                                                            #{waitlistPosition}
                                                         </strong>
                                                     </p>
 
@@ -515,8 +553,10 @@ function StudentDashboard({ user, onLogout }) {
 
                 {registrations.length === 0 ? (
                     <div className="empty-state">
+                        <span className="empty-state-icon" aria-hidden="true">🎟️</span>
+                        <h3>No registrations yet</h3>
                         <p>
-                            You have no confirmed registrations.
+                            You haven't registered for any events yet.
                         </p>
                     </div>
                 ) : (
@@ -553,7 +593,9 @@ function StudentDashboard({ user, onLogout }) {
 
                                         <span className="attendance-status">
                                             Attendance:{" "}
-                                            {registration.attendance}
+                                            <span className={`attendance-value attendance-${(registration.attendance || "Pending").toLowerCase()}`}>
+                                                {registration.attendance || "Pending"}
+                                            </span>
                                         </span>
 
                                     </div>
@@ -586,9 +628,10 @@ function StudentDashboard({ user, onLogout }) {
 
                 {waitlist.length === 0 ? (
                     <div className="empty-state">
-
+                        <span className="empty-state-icon" aria-hidden="true">⌛</span>
+                        <h3>No waitlist entries</h3>
                         <p>
-                            You are not currently on any waitlist.
+                            You are not currently waiting for any event.
                         </p>
 
                     </div>
@@ -624,8 +667,8 @@ function StudentDashboard({ user, onLogout }) {
                                             ⏳ Waitlisted
                                         </span>
 
-                                        <span>
-                                            Position: {entry.position}
+                                        <span className="queue-position">
+                                            #{entry.position}
                                         </span>
 
                                         <span>

@@ -162,7 +162,7 @@ function App() {
                             🎓
                         </div>
 
-                        <span>CampusEvents</span>
+                        <span>Event Management System</span>
                     </div>
 
                     <div className="info-content">
@@ -243,6 +243,14 @@ function App() {
                 {/* Right Side */}
                 <div className="auth-panel">
 
+                    <div className="auth-panel-brand">
+                        <span className="auth-panel-brand-icon" aria-hidden="true">🎓</span>
+                        <div>
+                            <strong>Event Management System</strong>
+                            <small>College events, made simple</small>
+                        </div>
+                    </div>
+
                     <div className="auth-card">
 
                         <div className="auth-header">
@@ -255,7 +263,7 @@ function App() {
 
                             <p>
                                 {isLogin
-                                    ? "Sign in to continue to CampusEvents"
+                                    ? "Sign in to continue to your event dashboard"
                                     : "Join your college event community"}
                             </p>
 
@@ -294,10 +302,11 @@ function App() {
 
                         </div>
 
-                        {/* Role Selection */}
+                        {/* Role selection is only needed when creating an account. */}
+                        {!isLogin && (
                         <div className="role-section">
 
-                            <label>Continue as</label>
+                            <label>Account type</label>
 
                             <div className="role-buttons">
 
@@ -334,6 +343,7 @@ function App() {
                             </div>
 
                         </div>
+                        )}
 
                         <form onSubmit={handleSubmit}>
 
@@ -349,6 +359,7 @@ function App() {
                                         name="name"
                                         type="text"
                                         placeholder="Enter your full name"
+                                        autoComplete="name"
                                         value={formData.name}
                                         onChange={handleChange}
                                         required
@@ -368,6 +379,7 @@ function App() {
                                     name="email"
                                     type="email"
                                     placeholder="Enter your email"
+                                    autoComplete="email"
                                     value={formData.email}
                                     onChange={handleChange}
                                     required
@@ -386,6 +398,7 @@ function App() {
                                     name="password"
                                     type="password"
                                     placeholder="Enter your password"
+                                    autoComplete={isLogin ? "current-password" : "new-password"}
                                     value={formData.password}
                                     onChange={handleChange}
                                     minLength="6"
@@ -414,7 +427,7 @@ function App() {
                                 {loading
                                     ? "Please wait..."
                                     : isLogin
-                                    ? "Login to CampusEvents →"
+                                    ? "Sign In →"
                                     : "Create Account →"}
                             </button>
 
