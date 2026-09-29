@@ -1,8 +1,6 @@
 # Event Management System
 
-## Overview
-
-A role-based college event management system. Administrators create and manage events, while students browse upcoming events, register for available seats, and join a First-Come, First-Served (FIFO) waitlist when an event is full.
+A role-based college event management system built for the A4 assessment requirement. Administrators create and manage events, while students browse upcoming events, register for available seats, and join a First-Come, First-Served (FIFO) waitlist when an event is full.
 
 ## Features
 
@@ -10,7 +8,7 @@ A role-based college event management system. Administrators create and manage e
 - Log in and manage events: create, edit, and delete.
 - View confirmed attendees, event capacity, and available seats.
 - View waitlisted students in FIFO order.
-- Mark confirmed attendees as Attended or Absent.
+- Mark confirmed attendees as **Attended** or **Absent**.
 
 ### Student
 - Register and log in.
@@ -19,58 +17,69 @@ A role-based college event management system. Administrators create and manage e
 - View registration status, attendance status, and actual FIFO waitlist position.
 - Cancel a confirmed registration and see current registrations and waitlist entries.
 
-New registrations and promoted students have Pending attendance by default.
+New registrations and promoted students have **Pending** attendance by default.
 
-### Registration rules
+## Registration Rules
+
 - Only `confirmed` registrations count toward event capacity; cancelled registrations and waitlist entries do not.
-- A student cannot register twice, join a waitlist while registered, join the same waitlist twice, or join a waitlist while seats remain.
+- A student cannot register twice, join a waitlist while already registered, join the same waitlist twice, or join a waitlist while seats remain.
 - Each queue entry stores `joinedAt`; queue operations sort by `joinedAt` and use the entry ID as a deterministic tie-breaker.
-- Cancelling a confirmed registration and promoting the oldest waitlisted student are performed in one MongoDB transaction. The promoted student is removed from the queue and their attendance is reset to Pending.
-- Waitlist positions are calculated against every queued student for the event, not only the logged-in student's entries.
+- Cancelling a confirmed registration and promoting the oldest waitlisted student are performed in one MongoDB transaction.
+- The promoted student is removed from the queue and their attendance is reset to `Pending`.
+- Waitlist positions are calculated against every queued student for the event.
 - Event capacity cannot be reduced below its number of confirmed registrations.
 
-## Technology stack
+## Technology Stack
 
 - **Frontend:** React, Vite, JavaScript, Axios, HTML, CSS
 - **Backend:** Node.js, Express.js, JWT, bcryptjs
 - **Database:** MongoDB Atlas with Mongoose
+- **Authentication:** JWT-based authentication with role-based authorization
 
-## Project structure
+## Project Structure
 
 ```text
-client/
-   src/
-      pages/                 Student and admin dashboards
-      App.jsx                Login, registration, and role-based dashboard routing
-      App.css                Application and dashboard styles
-      index.css              Global styles
-   package.json
-server/
-   config/                  MongoDB connection
-   controllers/             Authentication, event, and registration logic
-   middleware/              JWT and role protection
-   models/                  User, Event, Registration, and Waitlist schemas
-   routes/                  Authentication, event, and registration APIs
-   server.js                Express application entry point
-   package.json
-README.md
+Event-Management-System/
+├── client/
+│   ├── src/
+│   │   ├── pages/                 Student and admin dashboards
+│   │   ├── App.jsx                Login, registration, and role-based routing
+│   │   ├── App.css                Application and dashboard styles
+│   │   └── index.css              Global styles
+│   └── package.json
+│
+├── server/
+│   ├── config/                    MongoDB connection
+│   ├── controllers/               Authentication, event, registration logic
+│   ├── middleware/                JWT and role protection
+│   ├── models/                    User, Event, Registration, Waitlist schemas
+│   ├── routes/                    Authentication, event, registration APIs
+│   ├── server.js                  Express application entry point
+│   └── package.json
+│
+├── .gitignore
+└── README.md
 ```
 
-## API endpoints
+## API Endpoints
 
-All endpoints are under `/api`. Protected requests use `Authorization: Bearer <token>`.
+All endpoints are under `/api`. Protected requests use:
+
+```text
+Authorization: Bearer <token>
+```
 
 | Method | Endpoint | Access | Description |
-| --- | --- | --- | --- |
+|---|---|---|---|
 | POST | `/auth/register` | Public | Create an account with a student or admin role |
 | POST | `/auth/login` | Public | Log in and receive a JWT |
 | GET | `/events` | Authenticated | List events with capacity, confirmed seats, available seats, waitlist count, and Pending attendance count |
-| GET | `/events/:id` | Authenticated | Get one event with the same seat and summary counts |
+| GET | `/events/:id` | Authenticated | Get one event with seat and summary counts |
 | POST | `/events` | Admin | Create an event |
 | PUT | `/events/:id` | Admin | Edit an event |
 | DELETE | `/events/:id` | Admin | Delete an event and its registrations/waitlist |
-| POST | `/registrations` | Student | Register for an event (`{ "eventId": "..." }`) |
-| POST | `/registrations/waitlist` | Student | Join a full event's waitlist (`{ "eventId": "..." }`) |
+| POST | `/registrations` | Student | Register for an event |
+| POST | `/registrations/waitlist` | Student | Join a full event's waitlist |
 | DELETE | `/registrations/event/:eventId` | Student | Cancel a confirmed registration and promote the queue head |
 | GET | `/registrations/my` | Student | List confirmed registrations |
 | GET | `/registrations/my/waitlist` | Student | List waitlisted events with current positions |
@@ -78,76 +87,298 @@ All endpoints are under `/api`. Protected requests use `Authorization: Bearer <t
 | GET | `/registrations/event/:eventId/waitlist` | Admin | List waitlisted students in FIFO order |
 | PUT | `/registrations/:registrationId/attendance` | Admin | Set attendance to `Attended` or `Absent` |
 
-## Environment variables
-
-Set these values in `server/.env`; do not commit that file or put real credentials in this README.
-
-| Variable | Purpose |
-| --- | --- |
-| `MONGODB_URI` | MongoDB Atlas connection string |
-| `JWT_SECRET` | Long, randomly generated JWT signing secret |
-| `PORT` | API port (defaults to `5000`) |
-
-The frontend optionally accepts `VITE_API_URL` in `client/.env.local`, defaulting to `http://localhost:5000/api`.
-
-## Installation
-
-### Requirements
-- Node.js and npm
-- A MongoDB Atlas connection string (or another MongoDB deployment that supports transactions)
+## Environment Variables
 
 ### Backend
-1. In `server/`, install dependencies with `npm install`.
-2. Create `server/.env` with:
 
-   ```env
-   MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>/<database>
-   JWT_SECRET=<long-random-secret>
-   PORT=5000
-   ```
+Create `server/.env` locally.
 
-3. Start the API from `server/` with `npm run dev`. The default API address is `http://localhost:5000`.
+```env
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>/<database>
+JWT_SECRET=<long-random-secret>
+PORT=5000
+```
+
+| Variable | Purpose |
+|---|---|
+| `MONGODB_URI` | MongoDB Atlas connection string |
+| `JWT_SECRET` | Secret used to sign JWT authentication tokens |
+| `PORT` | Port used by the Express API; defaults to `5000` |
 
 ### Frontend
-1. In `client/`, install dependencies with `npm install`.
-2. Optionally create `client/.env.local` to configure the API root:
 
-   ```env
-   VITE_API_URL=http://localhost:5000/api
-   ```
+The frontend can optionally use `client/.env.local`:
 
-   The same API root is used for login, events, registration, waitlist, and attendance requests. If omitted, the frontend defaults to `http://localhost:5000/api`.
-3. Start Vite from `client/` with `npm run dev` and open the URL it prints (normally `http://localhost:5173`).
+```env
+VITE_API_URL=http://localhost:5000/api
+```
 
-JWTs are stored under the `eventManagementToken` local-storage key. The `.gitignore` excludes `.env` and `.env.*` files (except `.env.example` templates); never commit database credentials or JWT secrets.
+If it is omitted, the frontend uses `http://localhost:5000/api` for local development.
+
+**Security:** Never commit `server/.env`, `client/.env.local`, database passwords, JWT secrets, API keys, or other private credentials. Environment files are excluded by `.gitignore`.
+
+## Local Installation
+
+### Requirements
+
+- Node.js and npm
+- MongoDB Atlas account and connection string
+- Git
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/manicpsycho0207/Event-Management-System.git
+cd Event-Management-System
+```
+
+### 2. Configure the backend
+
+```bash
+cd server
+npm install
+```
+
+Create `server/.env`:
+
+```env
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>/<database>
+JWT_SECRET=<long-random-secret>
+PORT=5000
+```
+
+Start the backend:
+
+```bash
+npm run dev
+```
+
+The local API runs on:
+
+```text
+http://localhost:5000
+```
+
+### 3. Configure the frontend
+
+Open another terminal:
+
+```bash
+cd client
+npm install
+```
+
+Optional `client/.env.local`:
+
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+Start Vite:
+
+```bash
+npm run dev
+```
+
+Open the local URL shown by Vite, normally:
+
+```text
+http://localhost:5173
+```
+
+## Production Deployment
+
+The application is structured for a separate frontend/backend deployment:
+
+```text
+                  ┌──────────────────────┐
+                  │   Vercel             │
+                  │   React + Vite       │
+                  └──────────┬───────────┘
+                             │ HTTPS API
+                             ▼
+                  ┌──────────────────────┐
+                  │   Render             │
+                  │   Node + Express     │
+                  └──────────┬───────────┘
+                             │
+                             ▼
+                  ┌──────────────────────┐
+                  │   MongoDB Atlas      │
+                  │   Database           │
+                  └──────────────────────┘
+```
+
+### Backend Deployment — Render
+
+Create a **Web Service** in Render and connect this GitHub repository.
+
+Use:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `server` |
+| Build Command | `npm install` |
+| Start Command | `npm start` |
+
+Add the backend environment variables in Render:
+
+```text
+MONGODB_URI=<your MongoDB Atlas connection string>
+JWT_SECRET=<strong random secret>
+PORT=<Render-provided port, if required by the platform>
+```
+
+Do not place real credentials in this README or in the GitHub repository.
+
+After deployment, Render will provide a backend URL similar to:
+
+```text
+https://your-backend-name.onrender.com
+```
+
+### Frontend Deployment — Vercel
+
+Create a Vercel project from the same GitHub repository.
+
+Use:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `client` |
+| Framework Preset | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+Add this Vercel environment variable:
+
+```text
+VITE_API_URL=https://your-backend-name.onrender.com/api
+```
+
+Replace the example Render URL with the actual deployed backend URL.
+
+After deployment, Vercel will provide the public frontend URL.
+
+### Deployment URLs
+
+Fill these in after deployment:
+
+```text
+Frontend:
+https://<your-vercel-domain>
+
+Backend:
+https://<your-render-domain>
+
+GitHub:
+https://github.com/manicpsycho0207/Event-Management-System
+```
 
 ## Waitlist Logic
 
 1. Students receive confirmed registration while seats are available.
-2. When capacity is reached, students can join the waitlist instead of registering.
-3. Entries are ordered by `joinedAt` and FIFO position is calculated against all waiting students for the event.
-4. When a confirmed attendee cancels, the earliest waitlisted student is promoted automatically in a MongoDB transaction and removed from the queue.
-5. Remaining students move up and receive updated positions. If the queue is empty, the cancelled seat becomes available.
+2. When capacity is reached, students can join the waitlist.
+3. Waitlist entries are ordered by `joinedAt`, producing a FIFO queue.
+4. When a confirmed attendee cancels, the earliest waitlisted student is automatically promoted.
+5. The promoted student is removed from the waitlist and receives `Pending` attendance.
+6. Remaining waitlisted students move up and receive updated positions.
+7. If the queue is empty, the cancelled seat becomes available.
 
 ## Attendance
 
-Every new or promoted confirmed registration starts with `Pending` attendance. An administrator can update confirmed attendees to `Attended` or `Absent`; the current value appears on the student registration list and the admin attendee table.
+Every new or promoted confirmed registration starts with `Pending` attendance.
 
-## Test credentials
+An administrator can update confirmed attendees to:
 
-The README previously listed these local/demo credentials. They are not guaranteed to exist in a given database; register the accounts if needed.
+- `Attended`
+- `Absent`
+
+The attendance value is stored with the registration and is displayed in the appropriate dashboard views.
+
+## Authentication and Authorization
+
+The application uses JWT authentication.
+
+Two roles are supported:
+
+- **Admin** — event management, attendee/waitlist viewing, and attendance management.
+- **Student** — event browsing, registration, waitlist, cancellation, and status viewing.
+
+Passwords are hashed using `bcryptjs`.
+
+## Test Credentials
+
+The following credentials were used as local/demo assessment credentials:
 
 - **Admin:** `admin@test.com` / `admin123`
 - **Student:** `student@test.com` / `student123`
 
-Use only for local/demo assessment data. Change or remove demo credentials before deployment.
+These accounts are database-dependent and may not exist in a fresh MongoDB database.
 
-## Useful checks
+For a production deployment, use newly created accounts and do not rely on demo credentials.
 
-- Frontend production build: run `npm run build` in `client/`.
-- Frontend lint: run `npm run lint` in `client/`.
-- Verify the core workflow with at least two student accounts and one admin: register to capacity, add two waitlist entries, cancel a confirmed registration, then confirm the oldest student was promoted and the remaining queue position shifted.
+## Validation and Testing
 
-## Assessment scope
+Before submission or deployment, verify:
 
-This project focuses on event registration, FIFO waitlists, role-based event management, and attendance. Payment processing, ticketing, certificate generation, and complex multi-day scheduling are outside the assessment scope.
+### Frontend
+
+```bash
+cd client
+npm run lint
+npm run build
+```
+
+### Core A4 workflow
+
+Test with one admin account and at least two student accounts:
+
+1. Create an event with limited capacity.
+2. Register students until the event is full.
+3. Add students to the waitlist.
+4. Verify FIFO waitlist order.
+5. Attempt duplicate registration/waitlist actions.
+6. Cancel a confirmed registration.
+7. Verify the first waitlisted student is automatically promoted.
+8. Verify remaining waitlist positions shift correctly.
+9. Mark an attendee as `Attended` or `Absent`.
+10. Refresh and verify that the saved status remains correct.
+
+## Security Notes
+
+- Secrets are supplied through environment variables.
+- `.env` files must not be committed.
+- MongoDB credentials must never be placed in source code or README files.
+- JWT secrets should be long, random, and different between development and production.
+- Production deployments should use HTTPS URLs for the frontend and backend.
+
+## Assessment Scope
+
+This project focuses on:
+
+- Role-based authentication
+- College event management
+- Student event registration
+- Capacity management
+- FIFO event waitlists
+- Automatic waitlist promotion after cancellation
+- Attendance management
+
+The following are intentionally outside the assessment scope:
+
+- Payment processing
+- Ticketing
+- Certificate generation
+- Complex multi-day event scheduling
+
+## Repository
+
+GitHub repository:
+
+https://github.com/manicpsycho0207/Event-Management-System
+
+## Project Status
+
+**Assessment:** A4 — Event Registration with Waitlist  
+**Status:** Ready for deployment and final submission
