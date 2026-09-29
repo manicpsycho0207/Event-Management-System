@@ -1,451 +1,652 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "http://localhost:5000/api";
 
 function StudentDashboard({ user, onLogout }) {
     const [events, setEvents] = useState([]);
-    const [myRegistrations, setMyRegistrations] = useState([]);
+    const [registrations, setRegistrations] = useState([]);
+    const [waitlist, setWaitlist] = useState([]);
+
     const [loading, setLoading] = useState(true);
-    const [registeringId, setRegisteringId] = useState(null);
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
 
-    const token = localStorage.getItem("eventManagementToken");
+    const token =
+        localStorage.getItem("eventManagementToken");
 
-    const headers = {
+    const headers = useMemo(() => ({
         Authorization: `Bearer ${token}`
-    };
+    }), [token]);
 
-    const fetchData = async () => {
+    // ==========================================
+    // FETCH DATA
+    // ==========================================
+
+    const fetchData = useCallback(async () => {
         try {
-            setLoading(true);
-            setError("");
+            const [
+                eventsResponse,
+                registrationsResponse,
+                waitlistResponse
+            ] = await Promise.all([
+                axios.get(
+                    `${API_URL}/events`,
+                    { headers }
+                ),
 
-            const [eventsResponse, registrationsResponse] =
-                await Promise.all([
-                    axios.get(`${API_URL}/events`, { headers }),
-                    axios.get(`${API_URL}/registrations/my`, {
-                        headers
-                    })
-                ]);
+                axios.get(
+                    `${API_URL}/registrations/my`,
+                    { headers }
+                ),
 
-            setEvents(eventsResponse.data.events);
-            setMyRegistrations(
-                registrationsResponse.data.registrations
+                axios.get(
+                    `${API_URL}/registrations/my/waitlist`,
+                    { headers }
+                )
+            ]);
+
+            setEvents(
+                eventsResponse.data.events || []
             );
+
+            setRegistrations(
+                registrationsResponse.data.registrations || []
+            );
+
+            setWaitlist(
+                waitlistResponse.data.waitlistEntries || []
+            );
+
         } catch (err) {
-            console.error(err);
+            console.error(
+                "Dashboard loading error:",
+                err.response?.data || err.message
+            );
 
             setError(
                 err.response?.data?.message ||
-                    "Unable to load dashboard data."
+                "Unable to load dashboard data."
             );
         } finally {
             setLoading(false);
         }
-    };
+    }, [headers]);
 
     useEffect(() => {
-        fetchData();
-    }, []);
+        const timer = window.setTimeout(() => {
+            fetchData();
+        }, 0);
 
-    const isRegistered = (eventId) => {
-        return myRegistrations.some(
-            (registration) =>
-                registration.event?._id === eventId
-        );
-    };
+        return () => window.clearTimeout(timer);
+    }, [fetchData]);
+
+    // ==========================================
+    // REGISTER FOR EVENT
+    // ==========================================
 
     const handleRegister = async (eventId) => {
         try {
-            setRegisteringId(eventId);
             setMessage("");
             setError("");
 
             const response = await axios.post(
                 `${API_URL}/registrations`,
                 {
-                    eventId
+                    eventId: eventId
                 },
                 {
-                    headers
+                    headers: headers
                 }
             );
 
-            setMessage(response.data.message);
+            console.log(
+                "Registration response:",
+                response.data
+            );
 
-            // Refresh event and registration information
+            setMessage(
+                response.data.message ||
+                "Registration successful."
+            );
+
             await fetchData();
+
         } catch (err) {
-            console.error(err);
+            console.error(
+                "Registration error:",
+                err.response?.data || err.message
+            );
 
             setError(
                 err.response?.data?.message ||
-                    "Unable to register for this event."
+                "Registration failed."
             );
-        } finally {
-            setRegisteringId(null);
+
+            await fetchData();
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("eventManagementToken");
-        localStorage.removeItem("eventManagementUser");
+    // ==========================================
+    // JOIN WAITLIST
+    // ==========================================
 
-        onLogout();
+    const handleJoinWaitlist = async (eventId) => {
+        try {
+            setMessage("");
+            setError("");
+
+            const response = await axios.post(
+                `${API_URL}/registrations/waitlist`,
+                {
+                    eventId: eventId
+                },
+                {
+                    headers: headers
+                }
+            );
+
+            setMessage(
+                response.data.message ||
+                "You have joined the waitlist."
+            );
+
+            await fetchData();
+
+        } catch (err) {
+            console.error(
+                "Waitlist error:",
+                err.response?.data || err.message
+            );
+
+            setError(
+                err.response?.data?.message ||
+                "Unable to join waitlist."
+            );
+
+            await fetchData();
+        }
     };
 
-    const totalEvents = events.length;
+    // ==========================================
+    // CANCEL REGISTRATION
+    // ==========================================
 
-    const registeredCount = myRegistrations.length;
+    const handleCancelRegistration = async (
+        eventId
+    ) => {
+        const confirmed =
+            window.confirm(
+                "Are you sure you want to cancel your registration?"
+            );
 
-    const availableEvents = events.filter(
-        (event) =>
-            event.availableSeats > 0 &&
-            !isRegistered(event._id)
-    ).length;
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            setMessage("");
+            setError("");
+
+            const response = await axios.delete(
+                `${API_URL}/registrations/event/${eventId}`,
+                {
+                    headers: headers
+                }
+            );
+
+            setMessage(
+                response.data.message ||
+                "Registration cancelled."
+            );
+
+            await fetchData();
+
+        } catch (err) {
+            console.error(
+                "Cancellation error:",
+                err.response?.data || err.message
+            );
+
+            setError(
+                err.response?.data?.message ||
+                "Unable to cancel registration."
+            );
+        }
+    };
+
+    // ==========================================
+    // HELPER FUNCTIONS
+    // ==========================================
+
+    const isRegistered = (eventId) => {
+        return registrations.some(
+            (registration) =>
+                registration.event?._id === eventId
+        );
+    };
+
+    const getWaitlistEntry = (eventId) => {
+        return waitlist.find(
+            (entry) =>
+                entry.event?._id === eventId
+        );
+    };
+
+    const getWaitlistPosition = (eventId) => {
+        return getWaitlistEntry(eventId)?.position ?? null;
+    };
+
+    // ==========================================
+    // LOADING STATE
+    // ==========================================
+
+    if (loading) {
+        return (
+            <div className="dashboard-container">
+                <div className="loading-message">
+                    Loading dashboard...
+                </div>
+            </div>
+        );
+    }
+
+    // ==========================================
+    // DASHBOARD
+    // ==========================================
 
     return (
-        <div className="dashboard-page">
+        <div className="dashboard-container">
 
-            {/* Header */}
-            <header className="dashboard-header">
+            <div className="dashboard-topbar">
                 <div className="dashboard-brand">
-                    <div className="dashboard-brand-icon">
-                        🎓
-                    </div>
-
+                    <div className="dashboard-brand-icon">🎓</div>
                     <div>
-                        <h2>CampusEvents</h2>
+                        <strong>CampusEvents</strong>
                         <span>Student Portal</span>
                     </div>
                 </div>
-
-                <div className="dashboard-user">
-                    <div className="user-info">
-                        <strong>{user.name}</strong>
-                        <span>{user.email}</span>
-                    </div>
-
-                    <button
-                        className="logout-button"
-                        onClick={handleLogout}
-                    >
-                        Logout
+                <div className="dashboard-account">
+                    <span>{user?.name}</span>
+                    <button className="secondary-button" onClick={onLogout}>
+                        Log out
                     </button>
                 </div>
-            </header>
+            </div>
 
-            {/* Main Content */}
-            <main className="dashboard-content">
+            {/* Header */}
 
-                {/* Welcome */}
-                <section className="welcome-section">
+            <div className="dashboard-header">
+                <div>
+                    <h1>Student Dashboard</h1>
+
+                    <p>
+                        Browse events, register for seats,
+                        or join a waitlist when an event is full.
+                    </p>
+                </div>
+            </div>
+
+            {/* Messages */}
+
+            {message && (
+                <div className="success-message">
+                    {message}
+                </div>
+            )}
+
+            {error && (
+                <div className="error-message">
+                    {error}
+                </div>
+            )}
+
+            {/* Events */}
+
+            <section className="dashboard-section">
+
+                <div className="section-header">
                     <div>
-                        <span className="dashboard-eyebrow">
-                            STUDENT DASHBOARD
-                        </span>
-
-                        <h1>
-                            Welcome, {user.name.split(" ")[0]}! 👋
-                        </h1>
+                        <h2>Upcoming Events</h2>
 
                         <p>
-                            Discover upcoming college events and
-                            reserve your seat before they fill up.
+                            Register while seats are available.
                         </p>
                     </div>
-                </section>
+                </div>
 
-                {/* Messages */}
-                {message && (
-                    <div className="dashboard-message success">
-                        ✓ {message}
+                {events.length === 0 ? (
+                    <div className="empty-state">
+                        <h3>No events available</h3>
+
+                        <p>
+                            There are currently no events
+                            available for registration.
+                        </p>
                     </div>
-                )}
+                ) : (
 
-                {error && (
-                    <div className="dashboard-message error">
-                        {error}
-                    </div>
-                )}
+                    <div className="event-grid">
 
-                {/* Statistics */}
-                <section className="stats-grid">
+                        {events.map((event) => {
 
-                    <div className="stat-card">
-                        <div className="stat-icon purple">
-                            📅
-                        </div>
+                            const registered =
+                                isRegistered(
+                                    event._id
+                                );
 
-                        <div>
-                            <span>Upcoming Events</span>
-                            <strong>{totalEvents}</strong>
-                        </div>
-                    </div>
+                            const waitlistEntry =
+                                getWaitlistEntry(
+                                    event._id
+                                );
 
-                    <div className="stat-card">
-                        <div className="stat-icon green">
-                            🎟️
-                        </div>
+                            const waitlistPosition =
+                                getWaitlistPosition(
+                                    event._id
+                                );
 
-                        <div>
-                            <span>My Registrations</span>
-                            <strong>{registeredCount}</strong>
-                        </div>
-                    </div>
+                            const isFull =
+                                event.availableSeats <= 0;
 
-                    <div className="stat-card">
-                        <div className="stat-icon orange">
-                            🔥
-                        </div>
+                            return (
+                                <div
+                                    className="event-card"
+                                    key={event._id}
+                                >
 
-                        <div>
-                            <span>Available to Join</span>
-                            <strong>{availableEvents}</strong>
-                        </div>
-                    </div>
+                                    <div className="event-card-header">
 
-                </section>
+                                        <h3>
+                                            {event.name}
+                                        </h3>
 
-                {/* Events */}
-                <section className="events-section">
-
-                    <div className="section-heading">
-                        <div>
-                            <h2>Upcoming Events</h2>
-                            <p>
-                                Explore events happening on campus.
-                            </p>
-                        </div>
-
-                        <button
-                            className="refresh-button"
-                            onClick={fetchData}
-                        >
-                            ↻ Refresh
-                        </button>
-                    </div>
-
-                    {loading ? (
-                        <div className="empty-state">
-                            <div className="loading-spinner"></div>
-                            <p>Loading events...</p>
-                        </div>
-                    ) : events.length === 0 ? (
-                        <div className="empty-state">
-                            <div className="empty-icon">
-                                📅
-                            </div>
-
-                            <h3>No events available</h3>
-
-                            <p>
-                                There are currently no events
-                                available for registration.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="event-grid">
-
-                            {events.map((event) => {
-                                const registered =
-                                    isRegistered(event._id);
-
-                                const isFull =
-                                    event.availableSeats <= 0;
-
-                                return (
-                                    <div
-                                        className="event-card"
-                                        key={event._id}
-                                    >
-                                        <div className="event-card-top">
-                                            <div className="event-calendar">
-                                                <span>
-                                                    {new Date(
-                                                        event.date
-                                                    ).toLocaleDateString(
-                                                        "en-US",
-                                                        {
-                                                            month: "short"
-                                                        }
-                                                    )}
-                                                </span>
-
-                                                <strong>
-                                                    {new Date(
-                                                        event.date
-                                                    ).getDate()}
-                                                </strong>
-                                            </div>
-
-                                            <span
-                                                className={
-                                                    isFull
-                                                        ? "capacity-badge full"
-                                                        : "capacity-badge"
-                                                }
-                                            >
-                                                {isFull
-                                                    ? "Full"
-                                                    : `${event.availableSeats} seats left`}
+                                        {isFull && (
+                                            <span className="event-badge">
+                                                FULL
                                             </span>
-                                        </div>
+                                        )}
 
-                                        <div className="event-card-body">
+                                    </div>
 
-                                            <h3>{event.name}</h3>
+                                    <div className="event-details">
 
-                                            <div className="event-detail">
-                                                <span>📅</span>
-                                                {event.date}
-                                            </div>
+                                        <p>
+                                            <strong>
+                                                Date:
+                                            </strong>{" "}
+                                            {event.date}
+                                        </p>
 
-                                            <div className="event-detail">
-                                                <span>🕐</span>
-                                                {event.time}
-                                            </div>
+                                        <p>
+                                            <strong>
+                                                Time:
+                                            </strong>{" "}
+                                            {event.time}
+                                        </p>
 
-                                            <div className="event-capacity">
-                                                <div className="capacity-label">
-                                                    <span>
-                                                        Registration
-                                                    </span>
+                                        <p>
+                                            <strong>
+                                                Capacity:
+                                            </strong>{" "}
+                                            {event.maxCapacity}
+                                        </p>
 
-                                                    <span>
-                                                        {
-                                                            event.registeredSeats
-                                                        }
-                                                        /
-                                                        {
-                                                            event.maxCapacity
-                                                        }
-                                                    </span>
-                                                </div>
+                                        <p>
+                                            <strong>
+                                                Registered:
+                                            </strong>{" "}
+                                            {event.registeredSeats}
+                                        </p>
 
-                                                <div className="progress-bar">
-                                                    <div
-                                                        className="progress-fill"
-                                                        style={{
-                                                            width: `${Math.min(
-                                                                (event.registeredSeats /
-                                                                    event.maxCapacity) *
-                                                                    100,
-                                                                100
-                                                            )}%`
-                                                        }}
-                                                    ></div>
-                                                </div>
-                                            </div>
+                                        <p>
+                                            <strong>
+                                                Seats Available:
+                                            </strong>{" "}
+                                            {event.availableSeats}
+                                        </p>
 
-                                            {registered ? (
-                                                <button
-                                                    className="event-button registered"
-                                                    disabled
-                                                >
+                                    </div>
+
+                                    <div className="event-actions">
+
+                                        {/* Registered */}
+
+                                        {registered && (
+                                            <>
+                                                <div className="status-success">
                                                     ✓ Registered
-                                                </button>
-                                            ) : isFull ? (
+                                                </div>
+
                                                 <button
-                                                    className="event-button full"
-                                                    disabled
+                                                    className="danger-button"
+                                                    onClick={() =>
+                                                        handleCancelRegistration(
+                                                            event._id
+                                                        )
+                                                    }
                                                 >
-                                                    Event Full
+                                                    Cancel Registration
                                                 </button>
-                                            ) : (
+                                            </>
+                                        )}
+
+                                        {/* Waitlisted */}
+
+                                        {!registered &&
+                                            waitlistEntry && (
+                                                <div className="waitlist-status">
+
+                                                    <div className="status-warning">
+                                                        ⏳ Waitlisted
+                                                    </div>
+
+                                                    <p>
+                                                        Position:{" "}
+                                                        <strong>
+                                                            {waitlistPosition}
+                                                        </strong>
+                                                    </p>
+
+                                                </div>
+                                            )}
+
+                                        {/* Available */}
+
+                                        {!registered &&
+                                            !waitlistEntry &&
+                                            !isFull && (
                                                 <button
-                                                    className="event-button"
+                                                    className="primary-button"
                                                     onClick={() =>
                                                         handleRegister(
                                                             event._id
                                                         )
                                                     }
-                                                    disabled={
-                                                        registeringId ===
-                                                        event._id
-                                                    }
                                                 >
-                                                    {registeringId ===
-                                                    event._id
-                                                        ? "Registering..."
-                                                        : "Register Now →"}
+                                                    Register
                                                 </button>
                                             )}
-                                        </div>
+
+                                        {/* Full */}
+
+                                        {!registered &&
+                                            !waitlistEntry &&
+                                            isFull && (
+                                                <button
+                                                    className="primary-button"
+                                                    onClick={() =>
+                                                        handleJoinWaitlist(
+                                                            event._id
+                                                        )
+                                                    }
+                                                >
+                                                    Join Waitlist
+                                                </button>
+                                            )}
+
                                     </div>
-                                );
-                            })}
 
-                        </div>
-                    )}
-                </section>
+                                </div>
+                            );
+                        })}
 
-                {/* My Registrations */}
-                <section className="my-registrations-section">
+                    </div>
+                )}
 
-                    <div className="section-heading">
-                        <div>
-                            <h2>My Registrations</h2>
-                            <p>
-                                Events you have successfully joined.
-                            </p>
-                        </div>
+            </section>
+
+            {/* My Registrations */}
+
+            <section className="dashboard-section">
+
+                <div className="section-header">
+
+                    <div>
+                        <h2>My Registrations</h2>
+
+                        <p>
+                            Events you are currently registered for.
+                        </p>
                     </div>
 
-                    {myRegistrations.length === 0 ? (
-                        <div className="registration-empty">
-                            You haven't registered for any events yet.
-                        </div>
-                    ) : (
-                        <div className="registration-list">
+                </div>
 
-                            {myRegistrations.map(
-                                (registration) => (
-                                    <div
-                                        className="registration-row"
-                                        key={registration._id}
-                                    >
-                                        <div className="registration-icon">
-                                            🎟️
-                                        </div>
+                {registrations.length === 0 ? (
+                    <div className="empty-state">
+                        <p>
+                            You have no confirmed registrations.
+                        </p>
+                    </div>
+                ) : (
 
-                                        <div className="registration-info">
-                                            <strong>
-                                                {
-                                                    registration.event
-                                                        ?.name
-                                                }
-                                            </strong>
+                    <div className="registration-list">
 
-                                            <span>
-                                                📅{" "}
-                                                {
-                                                    registration.event
-                                                        ?.date
-                                                }{" "}
-                                                &nbsp; • &nbsp;
-                                                🕐{" "}
-                                                {
-                                                    registration.event
-                                                        ?.time
-                                                }
-                                            </span>
-                                        </div>
+                        {registrations.map(
+                            (registration) => (
 
-                                        <span className="registered-status">
-                                            Registered
-                                        </span>
+                                <div
+                                    className="registration-item"
+                                    key={registration._id}
+                                >
+
+                                    <div>
+
+                                        <h3>
+                                            {registration.event?.name}
+                                        </h3>
+
+                                        <p>
+                                            {registration.event?.date}
+                                            {" • "}
+                                            {registration.event?.time}
+                                        </p>
+
                                     </div>
-                                )
-                            )}
 
-                        </div>
-                    )}
-                </section>
+                                    <div className="registration-status">
 
-            </main>
+                                        <span className="status-success">
+                                            Confirmed
+                                        </span>
+
+                                        <span className="attendance-status">
+                                            Attendance:{" "}
+                                            {registration.attendance}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            )
+                        )}
+
+                    </div>
+                )}
+
+            </section>
+
+            {/* My Waitlist */}
+
+            <section className="dashboard-section">
+
+                <div className="section-header">
+
+                    <div>
+                        <h2>My Waitlist</h2>
+
+                        <p>
+                            Events where you are waiting for a seat.
+                        </p>
+                    </div>
+
+                </div>
+
+                {waitlist.length === 0 ? (
+                    <div className="empty-state">
+
+                        <p>
+                            You are not currently on any waitlist.
+                        </p>
+
+                    </div>
+                ) : (
+
+                    <div className="registration-list">
+
+                        {waitlist.map(
+                            (entry) => (
+
+                                <div
+                                    className="registration-item"
+                                    key={entry._id}
+                                >
+
+                                    <div>
+
+                                        <h3>
+                                            {entry.event?.name}
+                                        </h3>
+
+                                        <p>
+                                            {entry.event?.date}
+                                            {" • "}
+                                            {entry.event?.time}
+                                        </p>
+
+                                    </div>
+
+                                    <div className="registration-status">
+
+                                        <span className="status-warning">
+                                            ⏳ Waitlisted
+                                        </span>
+
+                                        <span>
+                                            Position: {entry.position}
+                                        </span>
+
+                                        <span>
+                                            Joined:{" "}
+                                            {new Date(
+                                                entry.joinedAt
+                                            ).toLocaleString()}
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+                            )
+                        )}
+
+                    </div>
+                )}
+
+            </section>
+
         </div>
     );
 }

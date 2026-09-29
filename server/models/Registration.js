@@ -14,9 +14,26 @@ const registrationSchema = new mongoose.Schema(
             required: true
         },
 
+        status: {
+            type: String,
+            enum: ["confirmed", "cancelled"],
+            default: "confirmed"
+        },
+
+        attendance: {
+            type: String,
+            enum: ["Pending", "Attended", "Absent"],
+            default: "Pending"
+        },
+
         registeredAt: {
             type: Date,
             default: Date.now
+        },
+
+        cancelledAt: {
+            type: Date,
+            default: null
         }
     },
     {
@@ -24,8 +41,9 @@ const registrationSchema = new mongoose.Schema(
     }
 );
 
-// Prevent the same student from registering
-// for the same event more than once.
+// Prevent duplicate active registrations.
+// A student can have only one registration record
+// for a particular event.
 registrationSchema.index(
     {
         event: 1,

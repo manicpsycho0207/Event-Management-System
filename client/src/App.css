@@ -872,3 +872,323 @@ input {
         align-items: flex-start;
     }
 }
+
+/* A4 student and admin dashboard layout */
+.dashboard-container {
+    width: 88%;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 0 70px;
+}
+
+.dashboard-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: white;
+}
+
+.dashboard-brand strong,
+.dashboard-brand span,
+.dashboard-account span {
+    display: block;
+}
+
+.dashboard-brand strong {
+    font-size: 15px;
+}
+
+.dashboard-brand span,
+.dashboard-account > span {
+    margin-top: 3px;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.dashboard-account {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.dashboard-container > .dashboard-header {
+    height: auto;
+    padding: 28px 0 18px;
+    border: 0;
+    background: transparent;
+}
+
+.dashboard-header h1 {
+    margin: 0;
+    font-size: 30px;
+}
+
+.dashboard-header p,
+.section-header p {
+    margin: 7px 0 0;
+    color: #6b7280;
+}
+
+.dashboard-container .dashboard-header > .primary-button {
+    width: auto;
+    padding: 11px 18px;
+}
+
+.dashboard-section {
+    margin-top: 24px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.section-header h2,
+.attendance-section h3,
+.waitlist-section h3 {
+    margin: 0;
+}
+
+.success-message,
+.error-message {
+    padding: 13px 16px;
+    margin-top: 14px;
+    border-radius: 9px;
+    font-size: 14px;
+}
+
+.success-message {
+    background: #f0fdf4;
+    color: #166534;
+}
+
+.error-message {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.event-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px 18px 0;
+}
+
+.event-card-header h3 {
+    margin: 0;
+}
+
+.event-details {
+    padding: 12px 18px;
+    color: #4b5563;
+    font-size: 14px;
+}
+
+.event-details p {
+    margin: 8px 0;
+}
+
+.event-badge,
+.status-success,
+.status-warning,
+.attendance-status {
+    display: inline-block;
+    padding: 6px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.event-badge {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.status-success {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.status-warning {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.event-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    padding: 0 18px 18px;
+}
+
+.event-actions > button {
+    width: auto;
+    flex: 1;
+}
+
+.event-actions .danger-button,
+.danger-button {
+    min-height: 40px;
+    padding: 10px 14px;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
+    background: #fff;
+    color: #b91c1c;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.waitlist-status,
+.registration-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.registration-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px 18px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.registration-item:last-child {
+    border-bottom: 0;
+}
+
+.registration-item h3 {
+    margin: 0 0 5px;
+    font-size: 16px;
+}
+
+.registration-item p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.attendance-status {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.attendance-section,
+.waitlist-section {
+    margin-top: 24px;
+}
+
+.attendance-section h3,
+.waitlist-section h3 {
+    margin-bottom: 12px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+    font-size: 13px;
+}
+
+.data-table th {
+    background: #f8fafc;
+    color: #6b7280;
+}
+
+.attendance-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.attendance-current {
+    width: 100%;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+.attendance-button {
+    padding: 7px 9px;
+    border: 1px solid #d1d5db;
+    border-radius: 7px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.attendance-button.active {
+    border-color: #4f46e5;
+    background: #eef2ff;
+    color: #3730a3;
+}
+
+.event-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background: white;
+}
+
+.event-form .form-group input {
+    width: 100%;
+}
+
+.event-form .form-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    grid-column: 1 / -1;
+}
+
+.event-form > .primary-button {
+    width: auto;
+    align-self: end;
+}
+
+@media (max-width: 650px) {
+    .dashboard-container {
+        width: 92%;
+        padding-top: 14px;
+    }
+
+    .dashboard-container > .dashboard-header {
+        align-items: flex-start;
+        padding: 22px 0 14px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 25px;
+    }
+
+    .dashboard-account > span {
+        display: none;
+    }
+
+    .registration-item {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .event-form,
+    .event-form .form-row {
+        grid-template-columns: 1fr;
+    }
+}
