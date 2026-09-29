@@ -103,7 +103,8 @@ PORT=5000
 |---|---|
 | `MONGODB_URI` | MongoDB Atlas connection string |
 | `JWT_SECRET` | Secret used to sign JWT authentication tokens |
-| `PORT` | Port used by the Express API; defaults to `5000` |
+| `CLIENT_URL` | Allowed production frontend origin for CORS |
+| `PORT` | Port used by the Express API; Render supplies the production port |
 
 ### Frontend
 
@@ -226,7 +227,8 @@ Add the backend environment variables in Render:
 ```text
 MONGODB_URI=<your MongoDB Atlas connection string>
 JWT_SECRET=<strong random secret>
-PORT=<Render-provided port, if required by the platform>
+CLIENT_URL=https://event-management-system-flax-beta.vercel.app
+PORT=<Render-provided port>
 ```
 
 Do not place real credentials in this README or in the GitHub repository.
@@ -234,7 +236,7 @@ Do not place real credentials in this README or in the GitHub repository.
 After deployment, Render will provide a backend URL similar to:
 
 ```text
-https://your-backend-name.onrender.com
+https://event-management-system-u12s.onrender.com
 ```
 
 ### Frontend Deployment — Vercel
@@ -253,7 +255,7 @@ Use:
 Add this Vercel environment variable:
 
 ```text
-VITE_API_URL=https://your-backend-name.onrender.com/api
+VITE_API_URL=https://event-management-system-u12s.onrender.com/api
 ```
 
 Replace the example Render URL with the actual deployed backend URL.
@@ -262,14 +264,14 @@ After deployment, Vercel will provide the public frontend URL.
 
 ### Deployment URLs
 
-Fill these in after deployment:
+The project is currently deployed and publicly accessible:
 
 ```text
 Frontend:
-https://<your-vercel-domain>
+https://event-management-system-flax-beta.vercel.app/
 
-Backend:
-https://<your-render-domain>
+Backend API:
+https://event-management-system-u12s.onrender.com/api
 
 GitHub:
 https://github.com/manicpsycho0207/Event-Management-System
@@ -381,4 +383,22 @@ https://github.com/manicpsycho0207/Event-Management-System
 ## Project Status
 
 **Assessment:** A4 — Event Registration with Waitlist  
-**Status:** Ready for deployment and final submission
+**Status:** ✅ Deployed and ready for final submission
+
+### 🌐 Live Application
+
+**Frontend:** https://event-management-system-flax-beta.vercel.app/
+
+**Backend API:** https://event-management-system-u12s.onrender.com/api
+
+### 💻 Source Code
+
+**GitHub:** https://github.com/manicpsycho0207/Event-Management-System
+
+### 👨‍💻 Author
+
+**Parth Mahendra Lonkar**  
+Bachelor of Engineering — Information Technology  
+Prof. Ram Meghe College of Engineering & Management, Badnera-Amravati
+
+> The application is deployed with the React/Vite frontend on **Vercel**, the Node.js/Express backend on **Render**, and **MongoDB Atlas** as the production database.
