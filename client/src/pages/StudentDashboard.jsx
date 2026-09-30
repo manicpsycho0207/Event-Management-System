@@ -17,9 +17,34 @@ function StudentDashboard({ user, onLogout }) {
     const token =
         localStorage.getItem("eventManagementToken");
 
-    const headers = useMemo(() => ({
-        Authorization: `Bearer ${token}`
-    }), [token]);
+    const headers = useMemo(
+        () => ({
+            Authorization: `Bearer ${token}`
+        }),
+        [token]
+    );
+
+    // ==========================================
+    // MESSAGE HELPERS
+    // ==========================================
+
+    const showMessage = (text) => {
+        setMessage(text);
+        setError("");
+
+        window.setTimeout(() => {
+            setMessage("");
+        }, 4000);
+    };
+
+    const showError = (text) => {
+        setError(text);
+        setMessage("");
+
+        window.setTimeout(() => {
+            setError("");
+        }, 5000);
+    };
 
     // ==========================================
     // FETCH DATA
@@ -66,7 +91,7 @@ function StudentDashboard({ user, onLogout }) {
                 err.response?.data || err.message
             );
 
-            setError(
+            showError(
                 err.response?.data?.message ||
                 "Unable to load dashboard data."
             );
@@ -88,10 +113,10 @@ function StudentDashboard({ user, onLogout }) {
     // ==========================================
 
     const handleRegister = async (eventId) => {
-        try {
-            setMessage("");
-            setError("");
+        setMessage("");
+        setError("");
 
+        try {
             const response = await axios.post(
                 `${API_URL}/registrations`,
                 {
@@ -102,7 +127,7 @@ function StudentDashboard({ user, onLogout }) {
                 }
             );
 
-            setMessage(
+            showMessage(
                 response.data.message ||
                 "Registration successful."
             );
@@ -115,12 +140,10 @@ function StudentDashboard({ user, onLogout }) {
                 err.response?.data || err.message
             );
 
-            setError(
+            showError(
                 err.response?.data?.message ||
                 "Registration failed."
             );
-
-            await fetchData();
         }
     };
 
@@ -129,10 +152,10 @@ function StudentDashboard({ user, onLogout }) {
     // ==========================================
 
     const handleJoinWaitlist = async (eventId) => {
-        try {
-            setMessage("");
-            setError("");
+        setMessage("");
+        setError("");
 
+        try {
             const response = await axios.post(
                 `${API_URL}/registrations/waitlist`,
                 {
@@ -143,7 +166,7 @@ function StudentDashboard({ user, onLogout }) {
                 }
             );
 
-            setMessage(
+            showMessage(
                 response.data.message ||
                 "You have joined the waitlist."
             );
@@ -156,12 +179,10 @@ function StudentDashboard({ user, onLogout }) {
                 err.response?.data || err.message
             );
 
-            setError(
+            showError(
                 err.response?.data?.message ||
                 "Unable to join waitlist."
             );
-
-            await fetchData();
         }
     };
 
@@ -181,10 +202,10 @@ function StudentDashboard({ user, onLogout }) {
             return;
         }
 
-        try {
-            setMessage("");
-            setError("");
+        setMessage("");
+        setError("");
 
+        try {
             const response = await axios.delete(
                 `${API_URL}/registrations/event/${eventId}`,
                 {
@@ -192,7 +213,7 @@ function StudentDashboard({ user, onLogout }) {
                 }
             );
 
-            setMessage(
+            showMessage(
                 response.data.message ||
                 "Registration cancelled."
             );
@@ -205,7 +226,7 @@ function StudentDashboard({ user, onLogout }) {
                 err.response?.data || err.message
             );
 
-            setError(
+            showError(
                 err.response?.data?.message ||
                 "Unable to cancel registration."
             );
@@ -238,8 +259,14 @@ function StudentDashboard({ user, onLogout }) {
     today.setHours(0, 0, 0, 0);
 
     const upcomingEvents = events.filter((event) => {
-        const eventDate = new Date(`${event.date}T00:00:00`);
-        return Number.isNaN(eventDate.getTime()) || eventDate >= today;
+        const eventDate = new Date(
+            `${event.date}T00:00:00`
+        );
+
+        return (
+            Number.isNaN(eventDate.getTime()) ||
+            eventDate >= today
+        );
     });
 
     // ==========================================
@@ -264,32 +291,62 @@ function StudentDashboard({ user, onLogout }) {
         <div className="dashboard-container">
 
             <div className="dashboard-topbar">
+
                 <div className="dashboard-brand">
-                    <div className="dashboard-brand-icon">🎓</div>
-                    <div>
-                        <strong>Event Management System</strong>
-                        <span>Student Dashboard</span>
+
+                    <div className="dashboard-brand-icon">
+                        🎓
                     </div>
+
+                    <div>
+                        <strong>
+                            Event Management System
+                        </strong>
+
+                        <span>
+                            Student Dashboard
+                        </span>
+                    </div>
+
                 </div>
+
                 <div className="dashboard-account">
-                    <span>{user?.name}</span>
-                    <span className="role-pill role-pill-student">Student</span>
-                    <button className="secondary-button" onClick={onLogout}>
+
+                    <span>
+                        {user?.name}
+                    </span>
+
+                    <span className="role-pill role-pill-student">
+                        Student
+                    </span>
+
+                    <button
+                        className="secondary-button"
+                        onClick={onLogout}
+                    >
                         Log out
                     </button>
+
                 </div>
+
             </div>
 
             {/* Header */}
 
             <div className="dashboard-header">
+
                 <div>
-                    <h1>Student Dashboard</h1>
+
+                    <h1>
+                        Student Dashboard
+                    </h1>
 
                     <p>
                         Discover events, reserve your seat, and manage your registrations.
                     </p>
+
                 </div>
+
             </div>
 
             {/* Messages */}
@@ -306,28 +363,82 @@ function StudentDashboard({ user, onLogout }) {
                 </div>
             )}
 
-            <section className="stats-grid student-summary-grid" aria-label="Student summary">
+            {/* Summary */}
+
+            <section
+                className="stats-grid student-summary-grid"
+                aria-label="Student summary"
+            >
+
                 <div className="stat-card">
-                    <span className="stat-icon stat-icon-purple" aria-hidden="true">📅</span>
+
+                    <span
+                        className="stat-icon stat-icon-purple"
+                        aria-hidden="true"
+                    >
+                        📅
+                    </span>
+
                     <div>
-                        <span className="stat-label">Upcoming Events</span>
-                        <strong className="stat-value">{upcomingEvents.length}</strong>
+
+                        <span className="stat-label">
+                            Upcoming Events
+                        </span>
+
+                        <strong className="stat-value">
+                            {upcomingEvents.length}
+                        </strong>
+
                     </div>
+
                 </div>
+
                 <div className="stat-card">
-                    <span className="stat-icon stat-icon-green" aria-hidden="true">✓</span>
+
+                    <span
+                        className="stat-icon stat-icon-green"
+                        aria-hidden="true"
+                    >
+                        ✓
+                    </span>
+
                     <div>
-                        <span className="stat-label">My Registrations</span>
-                        <strong className="stat-value">{registrations.length}</strong>
+
+                        <span className="stat-label">
+                            My Registrations
+                        </span>
+
+                        <strong className="stat-value">
+                            {registrations.length}
+                        </strong>
+
                     </div>
+
                 </div>
+
                 <div className="stat-card">
-                    <span className="stat-icon stat-icon-orange" aria-hidden="true">⌛</span>
+
+                    <span
+                        className="stat-icon stat-icon-orange"
+                        aria-hidden="true"
+                    >
+                        ⌛
+                    </span>
+
                     <div>
-                        <span className="stat-label">My Waitlist</span>
-                        <strong className="stat-value">{waitlist.length}</strong>
+
+                        <span className="stat-label">
+                            My Waitlist
+                        </span>
+
+                        <strong className="stat-value">
+                            {waitlist.length}
+                        </strong>
+
                     </div>
+
                 </div>
+
             </section>
 
             {/* Events */}
@@ -335,24 +446,42 @@ function StudentDashboard({ user, onLogout }) {
             <section className="dashboard-section">
 
                 <div className="section-header">
+
                     <div>
-                        <h2>Upcoming Events</h2>
+
+                        <h2>
+                            Upcoming Events
+                        </h2>
 
                         <p>
                             Register while seats are available.
                         </p>
+
                     </div>
+
                 </div>
 
                 {upcomingEvents.length === 0 ? (
+
                     <div className="empty-state">
-                        <span className="empty-state-icon" aria-hidden="true">📅</span>
-                        <h3>No upcoming events</h3>
+
+                        <span
+                            className="empty-state-icon"
+                            aria-hidden="true"
+                        >
+                            📅
+                        </span>
+
+                        <h3>
+                            No upcoming events
+                        </h3>
 
                         <p>
                             There's nothing scheduled yet. Check back soon for new events.
                         </p>
+
                     </div>
+
                 ) : (
 
                     <div className="event-grid">
@@ -389,14 +518,17 @@ function StudentDashboard({ user, onLogout }) {
                                             {event.name}
                                         </h3>
 
-                                        <span className={`event-status-badge ${registered
-                                            ? "event-status-registered"
-                                            : waitlistEntry
-                                                ? "event-status-waitlisted"
-                                                : isFull
-                                                    ? "event-status-full"
-                                                    : "event-status-available"
-                                            }`}>
+                                        <span
+                                            className={`event-status-badge ${
+                                                registered
+                                                    ? "event-status-registered"
+                                                    : waitlistEntry
+                                                        ? "event-status-waitlisted"
+                                                        : isFull
+                                                            ? "event-status-full"
+                                                            : "event-status-available"
+                                            }`}
+                                        >
                                             {registered
                                                 ? "✓ REGISTERED"
                                                 : waitlistEntry
@@ -453,6 +585,7 @@ function StudentDashboard({ user, onLogout }) {
 
                                         {registered && (
                                             <>
+
                                                 <div className="status-success">
                                                     ✓ Registered
                                                 </div>
@@ -467,6 +600,7 @@ function StudentDashboard({ user, onLogout }) {
                                                 >
                                                     Cancel Registration
                                                 </button>
+
                                             </>
                                         )}
 
@@ -474,6 +608,7 @@ function StudentDashboard({ user, onLogout }) {
 
                                         {!registered &&
                                             waitlistEntry && (
+
                                                 <div className="waitlist-status">
 
                                                     <div className="status-warning">
@@ -488,6 +623,7 @@ function StudentDashboard({ user, onLogout }) {
                                                     </p>
 
                                                 </div>
+
                                             )}
 
                                         {/* Available */}
@@ -495,6 +631,7 @@ function StudentDashboard({ user, onLogout }) {
                                         {!registered &&
                                             !waitlistEntry &&
                                             !isFull && (
+
                                                 <button
                                                     className="primary-button"
                                                     onClick={() =>
@@ -505,6 +642,7 @@ function StudentDashboard({ user, onLogout }) {
                                                 >
                                                     Register
                                                 </button>
+
                                             )}
 
                                         {/* Full */}
@@ -512,6 +650,7 @@ function StudentDashboard({ user, onLogout }) {
                                         {!registered &&
                                             !waitlistEntry &&
                                             isFull && (
+
                                                 <button
                                                     className="primary-button"
                                                     onClick={() =>
@@ -522,6 +661,7 @@ function StudentDashboard({ user, onLogout }) {
                                                 >
                                                     Join Waitlist
                                                 </button>
+
                                             )}
 
                                     </div>
@@ -531,6 +671,7 @@ function StudentDashboard({ user, onLogout }) {
                         })}
 
                     </div>
+
                 )}
 
             </section>
@@ -542,23 +683,40 @@ function StudentDashboard({ user, onLogout }) {
                 <div className="section-header">
 
                     <div>
-                        <h2>My Registrations</h2>
+
+                        <h2>
+                            My Registrations
+                        </h2>
 
                         <p>
                             Events you are currently registered for.
                         </p>
+
                     </div>
 
                 </div>
 
                 {registrations.length === 0 ? (
+
                     <div className="empty-state">
-                        <span className="empty-state-icon" aria-hidden="true">🎟️</span>
-                        <h3>No registrations yet</h3>
+
+                        <span
+                            className="empty-state-icon"
+                            aria-hidden="true"
+                        >
+                            🎟️
+                        </span>
+
+                        <h3>
+                            No registrations yet
+                        </h3>
+
                         <p>
                             You haven't registered for any events yet.
                         </p>
+
                     </div>
+
                 ) : (
 
                     <div className="registration-list">
@@ -592,10 +750,19 @@ function StudentDashboard({ user, onLogout }) {
                                         </span>
 
                                         <span className="attendance-status">
+
                                             Attendance:{" "}
-                                            <span className={`attendance-value attendance-${(registration.attendance || "Pending").toLowerCase()}`}>
-                                                {registration.attendance || "Pending"}
+
+                                            <span
+                                                className={`attendance-value attendance-${(
+                                                    registration.attendance ||
+                                                    "Pending"
+                                                ).toLowerCase()}`}
+                                            >
+                                                {registration.attendance ||
+                                                    "Pending"}
                                             </span>
+
                                         </span>
 
                                     </div>
@@ -606,6 +773,7 @@ function StudentDashboard({ user, onLogout }) {
                         )}
 
                     </div>
+
                 )}
 
             </section>
@@ -617,24 +785,40 @@ function StudentDashboard({ user, onLogout }) {
                 <div className="section-header">
 
                     <div>
-                        <h2>My Waitlist</h2>
+
+                        <h2>
+                            My Waitlist
+                        </h2>
 
                         <p>
                             Events where you are waiting for a seat.
                         </p>
+
                     </div>
 
                 </div>
 
                 {waitlist.length === 0 ? (
+
                     <div className="empty-state">
-                        <span className="empty-state-icon" aria-hidden="true">⌛</span>
-                        <h3>No waitlist entries</h3>
+
+                        <span
+                            className="empty-state-icon"
+                            aria-hidden="true"
+                        >
+                            ⌛
+                        </span>
+
+                        <h3>
+                            No waitlist entries
+                        </h3>
+
                         <p>
                             You are not currently waiting for any event.
                         </p>
 
                     </div>
+
                 ) : (
 
                     <div className="registration-list">
@@ -686,6 +870,7 @@ function StudentDashboard({ user, onLogout }) {
                         )}
 
                     </div>
+
                 )}
 
             </section>
